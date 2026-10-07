@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>harness</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  #testout {
+    position: fixed; left: 8px; top: 60px; z-index: 300;
+    width: 420px; max-height: 70vh; overflow: auto;
+    background: rgba(0, 10, 4, 0.88);
+    border: 1px solid #1e5; color: #4f4;
+    font: 11px/1.5 Consolas, monospace;
+    white-space: pre-wrap; word-break: break-word;
+    padding: 8px 10px;
+  }
+</style>
+</head>
+<body>
+<div id="loading">
+  <div class="loading-inner">
+    <div class="loading-title">SPACESIM</div>
+    <div class="loading-sub">HELIOCENTRIC MISSION PLANNER</div>
+    <div class="loading-bar"><div class="loading-fill" id="loadfill"></div></div>
+    <div class="loading-status" id="loadstatus">INITIALIZING ORBITAL MECHANICS…</div>
+  </div>
+</div>
+
+<div id="app">
+  <header id="topbar">
+    <div class="brand">
+      <span class="brand-mark">◉</span>
+      <div>
+        <div class="brand-name">SPACESIM</div>
+        <div class="brand-sub">HELIOCENTRIC MISSION PLANNER</div>
+      </div>
+    </div>
+    <div class="top-clock"><div class="clock-label">MISSION CLOCK</div><div class="clock-value" id="simdate">—</div></div>
+    <div class="top-clock"><div class="clock-label">TIME SCALE</div><div class="clock-value" id="timescale">1.0 day / s</div></div>
+  </header>
+
+  <aside id="panel">
+    <section class="panel-sec">
+      <h2>MISSION DESTINATION</h2>
+      <div class="dest-wrap">
+        <input type="text" id="destsearch" placeholder="Search destination…" autocomplete="off" spellcheck="false">
+        <div class="dest-list" id="destlist"></div>
+      </div>
+    </section>
+    <section class="panel-sec" id="statssec">
+      <h2>TELEMETRY <span class="live-dot" id="livedot"></span></h2>
+      <div class="stat-rows" id="stats">
+        <div class="stat-row"><span class="stat-k">STATUS</span><span class="stat-v" id="st-status">STANDBY</span></div>
+        <div class="stat-row"><span class="stat-k">DESTINATION</span><span class="stat-v" id="st-dest">—</span></div>
+        <div class="stat-row"><span class="stat-k">VELOCITY</span><span class="stat-v" id="st-vel">—</span></div>
+        <div class="stat-row"><span class="stat-k">TIME TO TARGET</span><span class="stat-v" id="st-ttt">—</span></div>
+        <div class="stat-row"><span class="stat-k">RANGE TO TARGET</span><span class="stat-v" id="st-range">—</span></div>
+        <div class="stat-row"><span class="stat-k">FLIGHT TIME</span><span class="stat-v" id="st-tof">—</span></div>
+        <div class="stat-row"><span class="stat-k">ARRIVAL</span><span class="stat-v" id="st-arrival">—</span></div>
+        <div class="stat-row"><span class="stat-k">DEPARTURE ΔV</span><span class="stat-v" id="st-dv">—</span></div>
+        <div class="stat-row"><span class="stat-k">TRANSFER ORBIT</span><span class="stat-v" id="st-orbit">—</span></div>
+      </div>
+    </section>
+    <section class="panel-sec">
+      <h2>TIME WARP</h2>
+      <div class="warp-row">
+        <button id="btn-pause" class="btn btn-ic" title="Pause / resume (Space)">❚❚</button>
+        <input type="range" id="warpslider" min="0" max="1000" value="500">
+      </div>
+      <div class="warp-presets" id="warppresets">
+        <button data-dps="1/24">1H</button>
+        <button data-dps="1" class="on">1D</button>
+        <button data-dps="7">1W</button>
+        <button data-dps="30">1M</button>
+        <button data-dps="182">6M</button>
+        <button data-dps="365">1Y</button>
+        <button data-dps="3650">10Y</button>
+      </div>
+    </section>
+    <section class="panel-sec">
+      <h2>VIEWPORT</h2>
+      <div class="view-btns">
+        <button id="btn-follow" class="btn">⌖ FOLLOW ROCKET</button>
+        <button id="btn-reset" class="btn">⌂ SYSTEM VIEW</button>
+      </div>
+      <div class="toggles">
+        <label class="tog"><input type="checkbox" id="tog-trajectory" checked><span class="box"></span><span>TRAJECTORY</span></label>
+        <label class="tog"><input type="checkbox" id="tog-orbits" checked><span class="box"></span><span>ORBITS</span></label>
+        <label class="tog"><input type="checkbox" id="tog-labels" checked><span class="box"></span><span>LABELS</span></label>
+        <label class="tog"><input type="checkbox" id="tog-belt" checked><span class="box"></span><span>ASTEROID BELT</span></label>
+      </div>
+    </section>
+    <section class="panel-sec panel-foot">
+      <div class="foot-note" id="footnote">Select a destination to compute and animate the transfer trajectory.</div>
+    </section>
+  </aside>
+
+  <main id="viewport">
+    <div id="labels"></div>
+    <div id="tooltip"></div>
+  </main>
+
+  <footer id="helpbar">
+    <span><b>LMB drag</b> orbit</span><span><b>wheel</b> zoom</span><span><b>RMB drag</b> pan</span>
+    <span><b>click body</b> focus</span><span><b>Space</b> pause</span><span><b>F</b> follow rocket</span>
+    <span><b>T</b> trajectory</span><span><b>R</b> system view</span>
+  </footer>
+</div>
+
+<div id="testout"></div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/OrbitControls.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/app.js"></script>
+<script>
+(function () {
+  "use strict";
+  var params = new URLSearchParams(location.search);
+  var CASE = params.get("case") || "boot";
+  var out = document.getElementById("testout");
+  var errors = [];
+  window.addEventListener("error", function (e) {
+    errors.push(String(e.message) + " @ " + (e.filename || "") + ":" + (e.lineno || 0));
+  });
+  var origErr = console.error, origWarn = console.warn;
+  console.error = function () { errors.push("console.error: " + Array.prototype.map.call(arguments, String).join(" ")); origErr.apply(console, arguments); };
+  console.warn = function () { errors.push("console.warn: " + Array.prototype.map.call(arguments, String).join(" ")); origWarn.apply(console, arguments); };
+
+  function line(s) { out.textContent += s + "\n"; }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function waitDone() {
+    return new Promise(function (res) {
+      function tick() {
+        var el = document.getElementById("loading");
+        if (el && el.classList.contains("done")) res(); else setTimeout(tick, 50);
+      }
+      tick();
+    });
+  }
+  function elText(id) { var e = document.getElementById(id); return e ? e.textContent : "(missing)"; }
+
+  async function run() {
+    line("case=" + CASE + "  url=" + location.href.split("?")[1]);
+    await waitDone();
+    line("load: " + elText("loadstatus"));
+    var S = window.__SPACESIM__;
+    if (!S) { line("FATAL: __SPACESIM__ not present"); finish(); return; }
+    line("simDays=" + S.simDays.toFixed(2) + "  (" + elText("simdate") + ")");
+
+    if (CASE === "boot" || CASE === "labels") {
+      var labels = document.querySelectorAll(".body-label");
+      line("labels created=" + labels.length + " (expect 19)");
+      var vis = 0;
+      Array.prototype.forEach.call(labels, function (l) { if (l.style.display !== "none") vis++; });
+      line("labels visible in system view=" + vis);
+      await sleep(600);
+    }
+
+    if (CASE === "mars_mid" || CASE === "mars_pass" || CASE === "moon") {
+      var dest = CASE === "moon" ? "moon" : "mars";
+      S.startMission(dest);
+      await sleep(400);
+      var m = S.mission;
+      line("mission dest=" + (m ? m.destName : "NULL") + "  ballistic=" + (m ? m.isBallistic : "-"));
+      if (m) {
+        line("TOF=" + m.plan.TOF.toFixed(2) + "d  dV=" + m.plan.dV_kms.toFixed(2) + " km/s  e=" + m.plan.e.toFixed(3) + "  arrival=" + elText("st-arrival"));
+        if (CASE === "mars_mid") S.seek(m.plan.tArrival - 25);
+        else if (CASE === "mars_pass") S.seek(m.plan.tArrival + 40);
+        else S.seek(m.plan.tArrival + 1);
+        await sleep(600);
+        line("status=" + elText("st-status"));
+        line("vel=" + elText("st-vel") + "  ttt=" + elText("st-ttt") + "  range=" + elText("st-range"));
+        var rl = document.querySelector(".body-label.rocket-label");
+        var ml = Array.prototype.find.call(document.querySelectorAll(".body-label"), function (x) { return x.textContent === "MARS"; });
+        if (rl && ml && rl.style.display !== "none" && ml.style.display !== "none") {
+          var dx = parseFloat(rl.style.left) - parseFloat(ml.style.left);
+          var dy = parseFloat(rl.style.top) - parseFloat(ml.style.top);
+          line("rocket-label vs MARS-label screen dist=" + Math.round(Math.sqrt(dx * dx + dy * dy)) + "px");
+        }
+      }
+    }
+
+    if (CASE === "zoom_earth") {
+      S.focus("earth");
+      await sleep(1600);
+      var moonLabel = Array.prototype.find.call(document.querySelectorAll(".body-label.moon-label"), function (el) { return el.textContent.indexOf("Moon") === 0; });
+      line("moon label visible near Earth=" + !!(moonLabel && moonLabel.style.display !== "none"));
+      var jupLabel = Array.prototype.find.call(document.querySelectorAll(".body-label"), function (x) { return x.textContent === "JUPITER"; });
+      line("jupiter label visible near Earth=" + !!(jupLabel && jupLabel.style.display !== "none"));
+    }
+
+    if (CASE === "fps") {
+      S.startMission("jupiter");
+      S.setWarp(30);
+      await sleep(300);
+      var t0 = performance.now(), n = 0;
+      await new Promise(function (res) {
+        function f() { n++; if (performance.now() - t0 < 3000) requestAnimationFrame(f); else res(); }
+        requestAnimationFrame(f);
+      });
+      line("fps over 3s (Jupiter mission, 30 d/s) = " + (n / 3).toFixed(1) + "  frames=" + n);
+      line("status=" + elText("st-status") + "  vel=" + elText("st-vel"));
+    }
+
+    finish();
+    function finish() {
+      line("errors=" + errors.length);
+      errors.slice(0, 10).forEach(function (e) { line("  ERR: " + e.slice(0, 250)); });
+      line("DONE");
+      document.title = "TEST:" + CASE + ":" + (errors.length ? "ERR(" + errors.length + ")" : "PASS");
+    }
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { run(); });
+  else run();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+*******************************************************************************
+JPL/DASTCOM            Small-body Index Search Results     2026-Oct-04 20:24:03
+
+ Comet AND asteroid index search:
+
+    DES = 8P/Tuttle;
+
+ Matching small-bodies: 
+    No matches found.
+*******************************************************************************

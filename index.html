@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpaceSim — Heliocentric Mission Planner</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="256x256" href="favicon.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="loading">
+  <div class="loading-inner">
+    <div class="loading-title">SPACESIM</div>
+    <div class="loading-sub">HELIOCENTRIC MISSION PLANNER</div>
+    <div class="loading-bar"><div class="loading-fill" id="loadfill"></div></div>
+    <div class="loading-status" id="loadstatus">INITIALIZING ORBITAL MECHANICS…</div>
+  </div>
+</div>
+
+<div id="app">
+  <!-- ============ TOP BAR ============ -->
+  <header id="topbar">
+    <div class="brand">
+      <span class="brand-mark">◉</span>
+      <div>
+        <div class="brand-name">SPACESIM</div>
+        <div class="brand-sub">HELIOCENTRIC MISSION PLANNER</div>
+      </div>
+    </div>
+    <div class="top-clock">
+      <div class="clock-label">MISSION CLOCK</div>
+      <div class="clock-value" id="simdate">—</div>
+    </div>
+    <div class="top-clock">
+      <div class="clock-label">TIME SCALE</div>
+      <div class="clock-value" id="timescale">1.0 day / s</div>
+    </div>
+  </header>
+
+  <div id="mainrow">
+  <!-- ============ LEFT PANEL ============ -->
+  <aside id="panel">
+    <section class="panel-sec">
+      <h2>MISSION DESTINATION</h2>
+      <div class="dest-wrap">
+        <input type="text" id="destsearch" placeholder="Search destination…" autocomplete="off" spellcheck="false">
+        <div class="dest-list" id="destlist"></div>
+      </div>
+    </section>
+
+    <section class="panel-sec" id="statssec">
+      <h2>TELEMETRY <span class="live-dot" id="livedot"></span></h2>
+      <div class="stat-rows" id="stats">
+        <div class="stat-row"><span class="stat-k">STATUS</span><span class="stat-v" id="st-status">STANDBY</span></div>
+        <div class="stat-row"><span class="stat-k">DESTINATION</span><span class="stat-v" id="st-dest">—</span></div>
+        <div class="stat-row"><span class="stat-k">VELOCITY</span><span class="stat-v" id="st-vel">—</span></div>
+        <div class="stat-row"><span class="stat-k">TIME TO TARGET</span><span class="stat-v" id="st-ttt">—</span></div>
+        <div class="stat-row"><span class="stat-k">RANGE TO TARGET</span><span class="stat-v" id="st-range">—</span></div>
+        <div class="stat-row"><span class="stat-k">FLIGHT TIME</span><span class="stat-v" id="st-tof">—</span></div>
+        <div class="stat-row"><span class="stat-k">ARRIVAL</span><span class="stat-v" id="st-arrival">—</span></div>
+        <div class="stat-row"><span class="stat-k">DEPARTURE ΔV</span><span class="stat-v" id="st-dv">—</span></div>
+        <div class="stat-row"><span class="stat-k">TRANSFER ORBIT</span><span class="stat-v" id="st-orbit">—</span></div>
+      </div>
+    </section>
+
+    <section class="panel-sec">
+      <h2>TIME WARP</h2>
+      <div class="warp-row">
+        <button id="btn-pause" class="btn btn-ic" title="Pause / resume (Space)">❚❚</button>
+        <input type="range" id="warpslider" min="0" max="1000" value="500">
+      </div>
+      <div class="warp-presets" id="warppresets">
+        <button data-dps="0.0416667">1H</button>
+        <button data-dps="1" class="on">1D</button>
+        <button data-dps="7">1W</button>
+        <button data-dps="30">1M</button>
+        <button data-dps="182">6M</button>
+        <button data-dps="365">1Y</button>
+        <button data-dps="3650">10Y</button>
+      </div>
+    </section>
+
+    <section class="panel-sec">
+      <h2>VIEWPORT</h2>
+      <div class="zoom-row">
+        <span class="zoom-cap">ZOOM</span>
+        <input type="range" id="zoomslider" min="0" max="1000" value="500">
+        <span class="zoom-read" id="zoomread">—</span>
+      </div>
+      <div class="view-btns">
+        <button id="btn-follow" class="btn" title="Fly to and chase the rocket from slightly behind it (F)">⌖ FOLLOW ROCKET</button>
+        <button id="btn-follow-dest" class="btn" title="Pan & zoom to the mission destination (click again to release)">◎ FOLLOW DESTINATION</button>
+        <button id="btn-reset" class="btn" title="Reset to the full solar-system view (R)">⌂ SYSTEM VIEW</button>
+      </div>
+      <div class="toggles">
+        <label class="tog"><input type="checkbox" id="tog-trajectory" checked><span class="box"></span><span>TRAJECTORY</span></label>
+        <label class="tog"><input type="checkbox" id="tog-orbits" checked><span class="box"></span><span>ORBITS</span></label>
+        <label class="tog"><input type="checkbox" id="tog-labels" checked><span class="box"></span><span>LABELS</span></label>
+        <label class="tog"><input type="checkbox" id="tog-belt" checked><span class="box"></span><span>ASTEROID BELT</span></label>
+      </div>
+    </section>
+
+    <section class="panel-sec panel-foot">
+      <div class="foot-note" id="footnote">Select a destination to compute and animate the transfer trajectory.</div>
+    </section>
+  </aside>
+
+  <!-- ============ VIEWPORT ============ -->
+  <main id="viewport">
+    <div id="labels"></div>
+    <div id="tooltip"></div>
+  </main>
+  </div>
+
+  <!-- ============ HELP BAR ============ -->
+  <footer id="helpbar">
+    <span><b>LMB drag</b> orbit</span>
+    <span><b>wheel</b> zoom</span>
+    <span><b>RMB drag</b> pan</span>
+    <span><b>click body</b> focus</span>
+    <span><b>Space</b> pause</span>
+    <span><b>F</b> follow rocket</span>
+    <span><b>T</b> trajectory</span>
+    <span><b>R</b> system view</span>
+  </footer>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/OrbitControls.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/textures_data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

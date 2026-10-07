@@ -1,0 +1,5 @@
+{
+  "code": "400",
+  "moreInfo": "https://ssd-api.jpl.nasa.gov/doc/sbdb.html",
+  "message": "one or more query parameter was not recognized"
+}
